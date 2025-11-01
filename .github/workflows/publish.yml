@@ -1,0 +1,75 @@
+name: Build & Publish (NuGet Trusted Publishing)
+
+on:
+  push:
+    tags:
+      - 'v*'            # e.g. v1.0.0
+  workflow_dispatch:
+
+permissions:
+  contents: read        # default
+  id-token: write       # required for OIDC
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # enable OIDC for this job
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # we read tags
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test (Release)
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      # Take the version from the tag name: "v1.2.3" -> "1.2.3"
+      - name: Compute package version
+        id: ver
+        shell: bash
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack
+        run: |
+          dotnet pack ITW.FluentMasker/ITW.FluentMasker.csproj \
+            --configuration Release \
+            --no-build \
+            -o ./artifacts \
+            /p:PackageVersion=${{ steps.ver.outputs.version }}
+
+      # Exchange GitHub OIDC token -> short-lived NuGet API key (≈1 hour)
+      - name: NuGet login (OIDC → temp API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}   # your nuget.org username (profile name)
+
+      - name: Push package to NuGet.org
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
+
+          dotnet nuget push "./artifacts/*.snupkg" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
