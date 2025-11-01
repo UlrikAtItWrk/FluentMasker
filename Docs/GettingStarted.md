@@ -8,12 +8,12 @@ FluentMasker is a powerful .NET library for masking sensitive data with a fluent
 
 ### Key Features
 
-* **Fluent API** - Chain multiple masking rules in readable, declarative style  
-* **Security-First** - Built-in ReDoS protection for regex operations  
-* **High Performance** - Compiled expression trees for 10x+ faster property access  
-* **Type-Safe** - Generic masking rules with compile-time validation  
-* **Extensible** - Easy to create custom masking rules  
-* **Rich Rule Set** - 25+ built-in masking rules for common scenarios
+* **Fluent API** - Chain multiple masking rules in readable, declarative style
+* **Security-First** - Built-in ReDoS protection for regex operations
+* **High Performance** - Compiled expression trees for 10x+ faster property access
+* **Type-Safe** - Generic masking rules with compile-time validation
+* **Extensible** - Easy to create custom masking rules
+* **Rich Rule Set** - 30+ built-in masking rules for common scenarios
 
 ## Installation
 
@@ -38,8 +38,10 @@ Install-Package ITW.FluentMasker
 
 ### Requirements
 
-- .NET 8.0 or higher
-- Newtonsoft.Json 13.0.3+ (automatically installed as dependency)
+- **.NET 8.0 or higher** (recommended)
+  - Compatible with .NET 6.0 and .NET 7.0
+  - Targets .NET Standard 2.0 for broad compatibility
+- **Newtonsoft.Json 13.0.3+** (automatically installed as dependency)
 
 ## Your First Masker (5-Minute Tutorial)
 
@@ -301,7 +303,7 @@ _logger.LogInformation("Payment processed: {Card}", result.MaskedData);
 
 ## Most Commonly Used Rules
 
-Here are the rules you'll use most often:
+Here are the rules you'll use most often. For a complete catalog of all 30+ built-in rules, see the [Mask Rules Reference](./MaskRulesReference.md).
 
 ### 1. EmailMaskRule - Email Masking
 
@@ -403,16 +405,21 @@ SetPropertyRuleBehavior(PropertyRuleBehavior.Include);
 ### ❌ Problem 2: Compilation Error "Ambiguous Call"
 
 ```csharp
-// ❌ This causes compilation error
+// ❌ This may cause compilation error with some rules
 MaskFor(x => x.Email, new EmailMaskRule());
 ```
 
-**Solution:** Cast to `IMaskRule` interface:
+**Solution:** Cast to `IMaskRule` interface when using rule classes directly:
 
 ```csharp
-// ✅ This works
+// ✅ This works - explicit cast
 MaskFor(x => x.Email, (IMaskRule)new EmailMaskRule());
+
+// ✅ Alternative - use fluent builder (no cast needed)
+MaskFor(x => x.Email, m => m.EmailMask(localKeep: 2));
 ```
+
+**Note:** The cast is needed because `MaskFor` has multiple overloads. Fluent builder extensions avoid this issue.
 
 ### ❌ Problem 3: Nothing Gets Masked
 
@@ -441,7 +448,7 @@ public void ProcessUser(Person person)
 }
 ```
 
-**Solution:** Reuse masker instances:
+**Solution:** Reuse masker instances (they're thread-safe and stateless):
 
 ```csharp
 // ✅ Create once, reuse many times
@@ -452,6 +459,8 @@ public void ProcessUser(Person person)
     var result = _masker.Mask(person);
 }
 ```
+
+**Performance Note:** FluentMasker is highly optimized using `ArrayPool<char>` and compiled expression trees. Most position-based rules achieve **40-50 million operations/sec**. See [Performance Characteristics](./MaskRulesReference.md#performance-characteristics) for details.
 
 ### ❌ Problem 5: Null Reference Exception
 
@@ -661,8 +670,7 @@ PropertyRuleBehavior.Include  // ⚠️ Include unmapped properties as-is
 Now that you understand the basics, explore these topics:
 
 ### **Core Documentation**
-- **[Masking Rules Reference](./MaskingRulesReference.md)** - Complete catalog of all 25+ built-in rules
-- **[Advanced Patterns](./AdvancedPatterns.md)** - Enterprise patterns, DI, performance optimization
+- **[Mask Rules Reference](./MaskRulesReference.md)** - Complete catalog of all 30+ built-in rules with examples
 - **[Compliance Guide](./ComplianceGuide.md)** - GDPR, HIPAA, PCI-DSS implementation patterns
 
 ### **Integration Guides**
@@ -670,8 +678,8 @@ Now that you understand the basics, explore these topics:
 - **[ILogger Integration](./ILoggerIntegration.md)** - Using with Microsoft.Extensions.Logging
 
 ### **Specialized Topics**
-- **[DateShiftRule Documentation](./DateAgeMaskRule.md)** - HIPAA-compliant date masking
-- **[NationalIdMaskRule Documentation](./NationalIdMaskRule.md)** - Country-specific ID masking
+- **[Date & Age Masking](./DateAgeMaskRule.md)** - HIPAA-compliant date masking and age bucketing
+- **[National ID Masking](./NationalIdMaskRule.md)** - Country-specific ID masking for 100+ countries
 
 ### **Sample Projects**
 - **ITW.FluentMasker.Serilog.Destructure.Sample** - Working examples in your solution
@@ -685,18 +693,29 @@ Now that you understand the basics, explore these topics:
 
 ### Common Questions
 
-**Q: Can I mask nested objects?**  
+**Q: Can I mask nested objects?**
 A: Yes! Create separate maskers for nested types and use `MaskForEachRule<T>` for collections.
 
-**Q: Is FluentMasker thread-safe?**  
+**Q: Is FluentMasker thread-safe?**
 A: Yes! Maskers are stateless and can be safely reused across threads.
 
-**Q: Can I create custom rules?**  
-A: Absolutely! Implement `IMaskRule<TInput, TOutput>` interface. See the Advanced Patterns guide.
+**Q: Can I create custom rules?**
+A: Absolutely! Implement `IMaskRule<TInput, TOutput>` interface. See the [Mask Rules Reference](./MaskRulesReference.md) for examples.
 
-**Q: Does it work with Entity Framework?**  
-A: Yes, but mask data **after** retrieving from database, not in LINQ queries.
+**Q: Does it work with Entity Framework?**
+A: Yes, but mask data **after** retrieving from the database, not in LINQ queries.
 
-**Q: How do I mask DateTime properties?**  
-A: Use `DateShiftRule` or `TimeBucketRule` for date/time anonymization.
+```csharp
+// ✅ Correct - mask after retrieval
+var users = await dbContext.Users.ToListAsync();
+var maskedUsers = users.Select(u => masker.Mask(u).MaskedData);
+
+// ❌ Wrong - don't use masking in LINQ to Entities
+var maskedUsers = dbContext.Users
+    .Select(u => masker.Mask(u)) // This won't work!
+    .ToList();
+```
+
+**Q: How do I mask DateTime properties?**
+A: Use `DateShiftRule`, `DateAgeMaskRule`, or `TimeBucketRule` for date/time anonymization. See [Date & Age Masking](./DateAgeMaskRule.md).
 

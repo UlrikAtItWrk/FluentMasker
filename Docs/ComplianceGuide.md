@@ -99,11 +99,41 @@ var result = masker.Mask(user);
 
 **Use Case**: Maintain ability to track user behavior across sessions without exposing real identity.
 
+> **⚠️ SECURITY WARNING - Hardcoded Secrets**
+>
+> The examples below show hardcoded salts for **demonstration purposes only**. **NEVER hardcode salts or secrets in production code!**
+>
+> **Secure Alternatives:**
+> - **Azure Key Vault**: Store salts as secrets, retrieve at runtime
+> - **AWS Secrets Manager**: Managed secret storage with automatic rotation
+> - **Environment Variables**: Load from secure configuration (e.g., `appsettings.json` excluded from source control)
+> - **HashiCorp Vault**: Enterprise secret management
+> - **.NET Secret Manager**: Development-time secrets (not for production)
+>
+> **Example - Loading from Environment Variable:**
+> ```csharp
+> private static readonly byte[] _analyticsSecret =
+>     Convert.FromBase64String(Environment.GetEnvironmentVariable("ANALYTICS_SALT")
+>         ?? throw new InvalidOperationException("ANALYTICS_SALT not configured"));
+> ```
+>
+> **Security Risk**: Hardcoded salts in source code can be:
+> - Exposed in version control history
+> - Discovered through decompilation
+> - Leaked in code repositories
+> - Compromised if source code is breached
+>
+> **If an attacker obtains your static salt**, they can:
+> - Reverse pseudonymized data using rainbow tables
+> - Re-identify users across datasets
+> - Violate GDPR pseudonymization requirements
+
 ```csharp
 public class AnalyticsPseudonymizer : AbstractMasker<UserSession>
 {
-    private static readonly byte[] _analyticsSecret = 
-        Convert.FromBase64String("YourStaticSaltHere=="); // Store securely!
+    // ⚠️ EXAMPLE ONLY - Use secure secret storage in production!
+    private static readonly byte[] _analyticsSecret =
+        Convert.FromBase64String("YourStaticSaltHere==");
 
     public AnalyticsPseudonymizer()
     {
@@ -138,6 +168,7 @@ public class AnalyticsPseudonymizer : AbstractMasker<UserSession>
 }
 
 // Search example: When you need to find sessions for a specific email
+// ⚠️ In production, load _analyticsSecret from secure storage (see warning above)
 var searchEmail = "sophie.anderson@email.com";
 var hashedEmail = new HashRule(
     HashAlgorithmType.SHA256,
@@ -1057,6 +1088,431 @@ public class GlobalClinicalTrialMasker : AbstractMasker<TrialParticipant>
 
 ---
 
+## Secure Salt Storage and Management
+
+### Overview
+
+When using `HashRule` with `SaltMode.Static` for pseudonymization, the salt becomes a **critical security secret**. If compromised, an attacker can reverse the pseudonymization and re-identify individuals. This section provides guidance on secure salt storage, rotation, and management.
+
+### Why Salt Security Matters
+
+**Threat Model:**
+- **Version Control Exposure**: Hardcoded salts committed to Git are visible in history forever
+- **Decompilation**: .NET assemblies can be decompiled, exposing embedded secrets
+- **Insider Threats**: Developers with source access can extract salts
+- **Code Leaks**: Source code leaks to public repositories (GitHub, GitLab, etc.)
+- **Supply Chain Attacks**: Compromised dependencies could read hardcoded secrets
+
+**Impact of Salt Compromise:**
+- Attacker can build rainbow tables to reverse pseudonymized data
+- Re-identification of users across datasets
+- GDPR violation (pseudonymization no longer effective)
+- Potential regulatory fines and reputation damage
+
+### Secure Storage Options
+
+#### 1. Azure Key Vault (Recommended for Azure)
+
+```csharp
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+
+public class SecureHashRule
+{
+    private static byte[] LoadSaltFromKeyVault()
+    {
+        var keyVaultUrl = Environment.GetEnvironmentVariable("KEY_VAULT_URL")
+            ?? throw new InvalidOperationException("KEY_VAULT_URL not configured");
+
+        var client = new SecretClient(
+            new Uri(keyVaultUrl),
+            new DefaultAzureCredential());
+
+        KeyVaultSecret secret = client.GetSecret("analytics-salt");
+        return Convert.FromBase64String(secret.Value);
+    }
+
+    public static HashRule CreatePseudonymizationRule()
+    {
+        return new HashRule(
+            HashAlgorithmType.SHA256,
+            SaltMode.Static,
+            OutputFormat.Hex,
+            staticSalt: LoadSaltFromKeyVault());
+    }
+}
+```
+
+**Benefits:**
+- Centralized secret management
+- Automatic rotation support
+- Access logging and auditing
+- Integration with Azure RBAC
+- Secrets never touch source code
+
+#### 2. AWS Secrets Manager (Recommended for AWS)
+
+```csharp
+using Amazon.SecretsManager;
+using Amazon.SecretsManager.Model;
+
+public class AwsSecureHashRule
+{
+    private static byte[] LoadSaltFromSecretsManager()
+    {
+        var secretName = Environment.GetEnvironmentVariable("SALT_SECRET_NAME")
+            ?? "analytics-salt";
+
+        using var client = new AmazonSecretsManagerClient();
+
+        var request = new GetSecretValueRequest
+        {
+            SecretId = secretName
+        };
+
+        var response = client.GetSecretValueAsync(request).Result;
+        return Convert.FromBase64String(response.SecretString);
+    }
+
+    public static HashRule CreatePseudonymizationRule()
+    {
+        return new HashRule(
+            HashAlgorithmType.SHA256,
+            SaltMode.Static,
+            OutputFormat.Hex,
+            staticSalt: LoadSaltFromSecretsManager());
+    }
+}
+```
+
+**Benefits:**
+- Automatic secret rotation
+- Fine-grained IAM permissions
+- CloudTrail audit logging
+- Cross-region replication
+- Integration with AWS services
+
+#### 3. Environment Variables (Minimum Viable Security)
+
+```csharp
+public class EnvironmentHashRule
+{
+    private static byte[] LoadSaltFromEnvironment()
+    {
+        var saltBase64 = Environment.GetEnvironmentVariable("ANALYTICS_SALT");
+
+        if (string.IsNullOrEmpty(saltBase64))
+        {
+            throw new InvalidOperationException(
+                "ANALYTICS_SALT environment variable not configured. " +
+                "Set this in your deployment configuration (Azure App Settings, " +
+                "AWS ECS Task Definitions, Kubernetes Secrets, etc.)");
+        }
+
+        return Convert.FromBase64String(saltBase64);
+    }
+
+    public static HashRule CreatePseudonymizationRule()
+    {
+        return new HashRule(
+            HashAlgorithmType.SHA256,
+            SaltMode.Static,
+            OutputFormat.Hex,
+            staticSalt: LoadSaltFromEnvironment());
+    }
+}
+```
+
+**Configuration Examples:**
+
+**Azure App Service:**
+```bash
+az webapp config appsettings set \
+    --resource-group myResourceGroup \
+    --name myAppName \
+    --settings ANALYTICS_SALT="<base64-encoded-salt>"
+```
+
+**Kubernetes Secret:**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: masking-secrets
+type: Opaque
+data:
+  ANALYTICS_SALT: <base64-encoded-salt>
+```
+
+**Docker Compose:**
+```yaml
+services:
+  app:
+    environment:
+      - ANALYTICS_SALT=${ANALYTICS_SALT}
+    env_file:
+      - .env.production  # NOT committed to source control
+```
+
+**Benefits:**
+- Simple implementation
+- No external dependencies
+- Works in all environments
+- Better than hardcoding
+
+**Limitations:**
+- No automatic rotation
+- Manual secret distribution
+- Limited audit trail
+
+#### 4. HashiCorp Vault (Enterprise)
+
+```csharp
+using VaultSharp;
+using VaultSharp.V1.AuthMethods.Token;
+
+public class VaultHashRule
+{
+    private static byte[] LoadSaltFromVault()
+    {
+        var vaultAddr = Environment.GetEnvironmentVariable("VAULT_ADDR");
+        var vaultToken = Environment.GetEnvironmentVariable("VAULT_TOKEN");
+
+        var vaultClientSettings = new VaultClientSettings(vaultAddr,
+            new TokenAuthMethodInfo(vaultToken));
+
+        var vaultClient = new VaultClient(vaultClientSettings);
+
+        var secret = vaultClient.V1.Secrets.KeyValue.V2
+            .ReadSecretAsync("masking/analytics-salt").Result;
+
+        return Convert.FromBase64String(
+            secret.Data.Data["salt"].ToString());
+    }
+}
+```
+
+**Benefits:**
+- Dynamic secrets
+- Lease-based secret rotation
+- Detailed audit logs
+- Multi-cloud support
+- Advanced access policies
+
+### Salt Generation Best Practices
+
+#### Generating Cryptographically Secure Salts
+
+```csharp
+using System.Security.Cryptography;
+
+public static class SaltGenerator
+{
+    /// <summary>
+    /// Generates a cryptographically secure random salt.
+    /// </summary>
+    /// <param name="lengthInBytes">Salt length in bytes (minimum 16, recommended 32)</param>
+    /// <returns>Base64-encoded salt for storage</returns>
+    public static string GenerateSecureSalt(int lengthInBytes = 32)
+    {
+        if (lengthInBytes < 16)
+            throw new ArgumentException("Salt must be at least 16 bytes (128 bits)");
+
+        byte[] salt = new byte[lengthInBytes];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(salt);
+        }
+
+        return Convert.ToBase64String(salt);
+    }
+}
+
+// Usage: Generate once, store in Key Vault/Secrets Manager
+// string newSalt = SaltGenerator.GenerateSecureSalt(32);
+// Console.WriteLine($"Generated salt: {newSalt}");
+// Store this in your secret management system, NEVER in code!
+```
+
+#### Salt Length Recommendations
+
+| Use Case | Minimum Length | Recommended Length | Notes |
+|----------|----------------|-------------------|-------|
+| Production pseudonymization | 128 bits (16 bytes) | 256 bits (32 bytes) | Matches SHA-256 output size |
+| Development/testing | 128 bits (16 bytes) | 128 bits (16 bytes) | Use different salt than production |
+| High-security environments | 256 bits (32 bytes) | 512 bits (64 bytes) | Extra margin of safety |
+
+### Salt Rotation Strategy
+
+#### When to Rotate
+
+**Mandatory Rotation:**
+- ✅ Suspected compromise or breach
+- ✅ Employee with salt access leaves company
+- ✅ After security incident
+- ✅ Regulatory requirement changes
+
+**Recommended Rotation:**
+- ⏰ Annually for high-security environments
+- ⏰ Every 2-3 years for standard environments
+- ⏰ After major application updates
+
+#### Rotation Procedure
+
+```csharp
+public class SaltRotationExample
+{
+    // Support both old and new salts during transition period
+    private static readonly byte[] _currentSalt = LoadSaltFromKeyVault("current-salt");
+    private static readonly byte[] _previousSalt = LoadSaltFromKeyVault("previous-salt");
+
+    public static HashRule CreateHashRuleWithRotation(bool usePreviousSalt = false)
+    {
+        return new HashRule(
+            HashAlgorithmType.SHA256,
+            SaltMode.Static,
+            OutputFormat.Hex,
+            staticSalt: usePreviousSalt ? _previousSalt : _currentSalt);
+    }
+
+    // During rotation, check both hashes for lookups
+    public static bool TryFindUserByEmail(string email, out string userId)
+    {
+        // Try current salt first
+        var currentHash = CreateHashRuleWithRotation(false).Apply(email);
+        if (database.TryGetByEmailHash(currentHash, out userId))
+            return true;
+
+        // Fall back to previous salt
+        var previousHash = CreateHashRuleWithRotation(true).Apply(email);
+        if (database.TryGetByEmailHash(previousHash, out userId))
+        {
+            // Re-hash with current salt and update database
+            database.UpdateEmailHash(userId, currentHash);
+            return true;
+        }
+
+        return false;
+    }
+}
+```
+
+**Rotation Checklist:**
+1. Generate new salt securely
+2. Store new salt in Key Vault/Secrets Manager
+3. Deploy code supporting both old and new salts
+4. Gradually re-hash data with new salt
+5. Monitor for lookup failures
+6. After transition period, remove old salt
+
+### Development vs. Production
+
+**Critical Rule:** **NEVER use production salts in development/test environments!**
+
+```csharp
+public class EnvironmentAwareHashRule
+{
+    private static byte[] LoadSaltForEnvironment()
+    {
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? "Production";
+
+        return environment switch
+        {
+            "Development" => LoadSaltFromEnvironment("DEV_ANALYTICS_SALT"),
+            "Staging" => LoadSaltFromKeyVault("staging-analytics-salt"),
+            "Production" => LoadSaltFromKeyVault("prod-analytics-salt"),
+            _ => throw new InvalidOperationException($"Unknown environment: {environment}")
+        };
+    }
+}
+```
+
+**Why Separate Salts Matter:**
+- Development data might be less secure
+- Prevents cross-environment attacks
+- Limits blast radius of compromise
+- Easier to rotate development salts
+
+### Secret Scanning and Prevention
+
+#### Pre-Commit Hooks (git-secrets)
+
+```bash
+# Install git-secrets
+brew install git-secrets  # macOS
+# or
+apt-get install git-secrets  # Linux
+
+# Configure for repository
+git secrets --install
+git secrets --register-aws
+
+# Add custom patterns
+git secrets --add 'Convert\.FromBase64String\("(?![A-Za-z0-9+/=]{0,10}")'
+git secrets --add 'staticSalt:\s*new\s*byte\[\]'
+```
+
+#### CI/CD Pipeline Scanning
+
+```yaml
+# GitHub Actions example
+name: Security Scan
+on: [push, pull_request]
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: TruffleHog Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+```
+
+### Monitoring and Auditing
+
+```csharp
+public class AuditedHashRule
+{
+    private readonly ILogger<AuditedHashRule> _logger;
+
+    public AuditedHashRule(ILogger<AuditedHashRule> logger)
+    {
+        _logger = logger;
+    }
+
+    public HashRule CreateHashRuleWithAudit()
+    {
+        _logger.LogInformation(
+            "Creating HashRule for pseudonymization. " +
+            "Salt loaded from: {SaltSource}, " +
+            "Algorithm: {Algorithm}, " +
+            "Environment: {Environment}",
+            "KeyVault",  // NEVER log the actual salt value!
+            "SHA256",
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+
+        return new HashRule(
+            HashAlgorithmType.SHA256,
+            SaltMode.Static,
+            OutputFormat.Hex,
+            staticSalt: LoadSaltFromKeyVault());
+    }
+}
+```
+
+**What to Audit:**
+- ✅ Salt loading events (source, timestamp, user)
+- ✅ Failed salt access attempts
+- ✅ Environment where salt was loaded
+- ✅ Application version using the salt
+- ❌ **NEVER log the actual salt value!**
+
+---
+
 ## Compliance Checklists
 
 ### GDPR Compliance Checklist
@@ -1115,16 +1571,27 @@ All 18 identifiers must be removed or de-identified:
 
 ### General Security Best Practices
 
-- [ ] **Static Salts**: Stored securely (Key Vault, environment variables)
+- [ ] **Static Salts - CRITICAL**: **NEVER hardcode salts in source code**
+  - ✅ Use Azure Key Vault, AWS Secrets Manager, or HashiCorp Vault
+  - ✅ Load from environment variables (excluded from source control)
+  - ✅ Rotate salts periodically (document rotation procedure)
+  - ✅ Use minimum 128-bit (16-byte) random salts
+  - ❌ Never commit salts to version control
+  - ❌ Never log or display salt values
+  - ❌ Never reuse salts across environments (dev/staging/prod)
+  - **Example**: `Convert.FromBase64String(Environment.GetEnvironmentVariable("HASH_SALT"))`
 - [ ] **Deterministic Hashing**: Document which fields use static vs. per-record salts
+  - Static salt = searchable pseudonyms (same input → same output)
+  - Per-record salt = true anonymization (same input → different outputs)
 - [ ] **Performance**: Use compiled maskers in production (`AbstractMasker` auto-compiles)
 - [ ] **Validation**: Test maskers with real data samples before production
 - [ ] **Code Reviews**: Security team reviews all new maskers
 - [ ] **Documentation**: Document business justification for each unmasked field
-- [ ] **Monitoring**: Log masker usage and failures
+- [ ] **Monitoring**: Log masker usage and failures (but never log the actual salt values!)
 - [ ] **Incident Response**: Plan for handling exposed data if masking fails
 - [ ] **Training**: Developers trained on when to use `{@Object}` vs. `{Object}` in logs
 - [ ] **Testing**: Unit tests verify masking rules produce expected outputs
+- [ ] **Secret Scanning**: Use tools like git-secrets, TruffleHog to detect accidental commits
 
 ---
 
