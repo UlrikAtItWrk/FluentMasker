@@ -5,10 +5,54 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- NuGet Package Properties -->
+    <PackageId>ITW.FluentMasker</PackageId>
+    
+    <!-- Version using MinVer for automatic versioning based on Git tags -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerMinimumMajorMinor>2.0</MinVerMinimumMajorMinor>
+    <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
+    
+    <Authors>Ulrik Baerholm</Authors>
+    <Company>It-wrk</Company>
+    <Product>FluentMasker</Product>
+    <Description>A powerful and flexible .NET library for masking sensitive data with a fluent API. Perfect for data privacy, GDPR compliance, logging, and secure data handling. Features 25+ built-in masking rules, ReDoS protection, type-safe operations, and high-performance compiled expressions.</Description>
+    <PackageTags>masking;data-privacy;gdpr;security;pii;sensitive-data;fluent-api;data-protection;anonymization;redaction;logging</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/UlrikAtItWrk/FluentMasker</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/UlrikAtItWrk/FluentMasker</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) 2025 It-wrk</Copyright>
+    
+    <!-- Optional: Add package icon -->
+    <!-- <PackageIcon>icon.png</PackageIcon> -->
+    
+    <!-- Source Link Support for better debugging experience -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <!-- Uncomment if you add an icon -->
+    <!-- <None Include="icon.png" Pack="true" PackagePath="\" /> -->
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    
+    <!-- Source Link for GitHub -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    
+    <!-- MinVer for automatic semantic versioning from Git tags -->
+    <PackageReference Include="MinVer" Version="6.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>
