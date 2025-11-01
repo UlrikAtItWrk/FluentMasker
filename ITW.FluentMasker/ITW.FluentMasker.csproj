@@ -1,18 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     
     <!-- NuGet Package Properties -->
     <PackageId>ITW.FluentMasker</PackageId>
-    
-    <!-- Version using MinVer for automatic versioning based on Git tags -->
-    <MinVerTagPrefix>v</MinVerTagPrefix>
-    <MinVerMinimumMajorMinor>2.0</MinVerMinimumMajorMinor>
-    <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
     
     <Authors>Ulrik Baerholm</Authors>
     <Company>It-wrk</Company>
