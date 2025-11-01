@@ -893,5 +893,84 @@ namespace ITW.FluentMasker.Extensions
         {
             return builder.AddRule(new IBANMaskRule(keepLast, preserveGrouping, maskChar));
         }
+
+        /// <summary>
+        /// Masks national identification numbers (SSN, Tax ID, etc.) for 100+ countries with format validation.
+        /// Supports automatic format detection and country-specific patterns with checksum hints.
+        /// Preserves separators like dashes and spaces in the original format.
+        /// </summary>
+        /// <param name="builder">The builder instance</param>
+        /// <param name="countryCode">ISO 3166-1 alpha-2 country code (e.g., "US", "UK", "DE"). If null, auto-detection is attempted. (default: "US")</param>
+        /// <param name="keepFirst">Override number of characters to keep visible at the start. If null, uses pattern default.</param>
+        /// <param name="keepLast">Override number of characters to keep visible at the end. If null, uses pattern default.</param>
+        /// <param name="maskChar">Character to use for masking (default: "*")</param>
+        /// <returns>The builder instance for method chaining</returns>
+        /// <remarks>
+        /// <para>Supports 100+ country formats including:</para>
+        /// <list type="bullet">
+        /// <item><description><b>European Union:</b> All 27 member states with their specific formats (e.g., AT, BE, BG, HR, CY, CZ, DK, EE, FI, FR, DE, GR, HU, IE, IT, LV, LT, LU, MT, NL, PL, PT, RO, SK, SI, ES, SE)</description></item>
+        /// <item><description><b>Americas:</b> US, CA, MX, BR, AR, CL, CO, PE, UY, EC, BO, VE</description></item>
+        /// <item><description><b>Asia-Pacific:</b> AU, NZ, JP, CN, KR, IN, SG, HK, TW, MY, TH, VN, IDN, PH</description></item>
+        /// <item><description><b>Europe (non-EU):</b> UK, CH, NO, IS, RU, TR, UA</description></item>
+        /// <item><description><b>Middle East & Africa:</b> IL, SA, AE, EG, MA, ZA, NG, KE, GH, PK</description></item>
+        /// </list>
+        /// <para>Each country pattern includes regex validation and comments about checksum algorithms where applicable.</para>
+        /// <para>Automatic format detection attempts to match input against all known patterns if country code is null.</para>
+        /// <para>Invalid formats are returned unchanged (graceful degradation).</para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var masker = new PersonMasker();
+        ///
+        /// // US SSN (default)
+        /// masker.MaskFor(x => x.SSN, m => m.NationalIdMask());
+        /// // "123-45-6789" becomes "***-**-6789" (keepFirst=0, keepLast=4)
+        ///
+        /// // UK National Insurance Number
+        /// masker.MaskFor(x => x.NINO, m => m.NationalIdMask("UK"));
+        /// // "AB123456C" becomes "AB******C" (keepFirst=2, keepLast=1)
+        ///
+        /// // Germany with custom masking
+        /// masker.MaskFor(x => x.TaxId, m => m.NationalIdMask("DE", keepFirst: 3, keepLast: 3));
+        /// // "12345678901" becomes "123*****901"
+        ///
+        /// // Canada SIN
+        /// masker.MaskFor(x => x.SIN, m => m.NationalIdMask("CA"));
+        /// // "123-456-789" becomes "***-***-789"
+        ///
+        /// // Brazil CPF
+        /// masker.MaskFor(x => x.CPF, m => m.NationalIdMask("BR"));
+        /// // "123.456.789-01" becomes "***.***-01" (keepLast=4)
+        ///
+        /// // Auto-detect format (when country is unknown)
+        /// masker.MaskFor(x => x.NationalId, m => m.NationalIdMask(countryCode: null));
+        /// // "123-45-6789" becomes "***-**-6789" (auto-detected as US SSN)
+        ///
+        /// // China Resident ID
+        /// masker.MaskFor(x => x.NationalId, m => m.NationalIdMask("CN"));
+        /// // "11010119900307123X" becomes "**************123X"
+        ///
+        /// // India Aadhaar
+        /// masker.MaskFor(x => x.Aadhaar, m => m.NationalIdMask("IN"));
+        /// // "1234 5678 9012" becomes "**** **** 9012"
+        ///
+        /// // Invalid format returns unchanged
+        /// masker.MaskFor(x => x.Id, m => m.NationalIdMask("US"));
+        /// // "INVALID" remains "INVALID"
+        ///
+        /// // Unformatted variants (where common)
+        /// masker.MaskFor(x => x.SSN, m => m.NationalIdMask("US_UNFORMATTED"));
+        /// // "123456789" becomes "*****6789"
+        /// </code>
+        /// </example>
+        public static StringMaskingBuilder NationalIdMask(
+            this StringMaskingBuilder builder,
+            string countryCode = "US",
+            int? keepFirst = null,
+            int? keepLast = null,
+            string maskChar = "*")
+        {
+            return builder.AddRule(new NationalIdMaskRule(countryCode, keepFirst, keepLast, maskChar));
+        }
     }
 }
