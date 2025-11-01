@@ -972,5 +972,76 @@ namespace ITW.FluentMasker.Extensions
         {
             return builder.AddRule(new NationalIdMaskRule(countryCode, keepFirst, keepLast, maskChar));
         }
+
+        /// <summary>
+        /// Masks URLs by hiding or masking query parameters and path segments.
+        /// Supports selective masking of specific query keys and path segments by index.
+        /// </summary>
+        /// <param name="builder">The builder instance</param>
+        /// <param name="hideQuery">If true, removes the entire query string. Takes precedence over maskQueryKeys. (default: false)</param>
+        /// <param name="maskQueryKeys">Array of query parameter keys to mask. Case-sensitive. (default: null)</param>
+        /// <param name="maskPathSegments">Array of path segment indices (0-based) to mask. Negative indices are ignored. (default: null)</param>
+        /// <param name="maskValue">The value to use for masking (default: "***")</param>
+        /// <returns>The builder instance for method chaining</returns>
+        /// <remarks>
+        /// <para>Common use cases include:</para>
+        /// <list type="bullet">
+        /// <item><description>Preventing token leaks in logs: api.com/users?token=abc123 → api.com/users?token=***</description></item>
+        /// <item><description>Masking user IDs in paths: /users/12345/profile → /users/***/profile</description></item>
+        /// <item><description>Hiding sensitive query strings entirely</description></item>
+        /// </list>
+        /// <para>Preserves URL structure including scheme, host, port, and fragments.</para>
+        /// <para>Invalid URLs are returned unchanged (graceful degradation).</para>
+        /// <para>If both hideQuery and maskQueryKeys are specified, hideQuery takes precedence.</para>
+        /// <para>Path segments are 0-indexed. For "/users/123/profile", segment 0 is "users", segment 1 is "123", segment 2 is "profile".</para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var masker = new ApiLogMasker();
+        ///
+        /// // Hide entire query string
+        /// masker.MaskFor(x => x.RequestUrl, m => m.URLMask(hideQuery: true));
+        /// // "https://api.example.com/users?token=abc123&amp;id=456" becomes "https://api.example.com/users"
+        ///
+        /// // Mask specific query parameters
+        /// masker.MaskFor(x => x.RequestUrl, m => m.URLMask(maskQueryKeys: new[] { "token", "apiKey" }));
+        /// // "https://api.example.com/users?token=abc123&amp;user=john" becomes "https://api.example.com/users?token=***&amp;user=john"
+        ///
+        /// // Mask path segments (e.g., user IDs)
+        /// masker.MaskFor(x => x.RequestUrl, m => m.URLMask(maskPathSegments: new[] { 2 }));
+        /// // "https://api.example.com/users/12345/profile" becomes "https://api.example.com/users/***/profile"
+        ///
+        /// // Combine query and path masking
+        /// masker.MaskFor(x => x.RequestUrl, m => m.URLMask(
+        ///     maskQueryKeys: new[] { "token" },
+        ///     maskPathSegments: new[] { 2 }
+        /// ));
+        /// // "https://api.example.com/users/12345?token=secret&amp;page=1" becomes "https://api.example.com/users/***?token=***&amp;page=1"
+        ///
+        /// // Custom mask value
+        /// masker.MaskFor(x => x.RequestUrl, m => m.URLMask(
+        ///     maskQueryKeys: new[] { "password" },
+        ///     maskValue: "[REDACTED]"
+        /// ));
+        /// // "https://example.com/login?password=secret123" becomes "https://example.com/login?password=[REDACTED]"
+        ///
+        /// // Invalid URL returns unchanged
+        /// masker.MaskFor(x => x.Url, m => m.URLMask(hideQuery: true));
+        /// // "not-a-url" remains "not-a-url"
+        ///
+        /// // Preserves URL structure (scheme, host, port, fragment)
+        /// masker.MaskFor(x => x.RequestUrl, m => m.URLMask(maskQueryKeys: new[] { "token" }));
+        /// // "https://user:pass@api.example.com:8080/path?token=secret#section" becomes "https://user:pass@api.example.com:8080/path?token=***#section"
+        /// </code>
+        /// </example>
+        public static StringMaskingBuilder URLMask(
+            this StringMaskingBuilder builder,
+            bool hideQuery = false,
+            string[]? maskQueryKeys = null,
+            int[]? maskPathSegments = null,
+            string maskValue = "***")
+        {
+            return builder.AddRule(new URLMaskRule(hideQuery, maskQueryKeys, maskPathSegments, maskValue));
+        }
     }
 }
