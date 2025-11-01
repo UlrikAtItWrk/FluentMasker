@@ -82,18 +82,18 @@ FluentMasker is a powerful data masking library designed to help you protect sen
 ## Documentation
 
 ### Essential Guides
-- **[Getting Started Guide](./Docs/GettingStarted.md)** - 5-minute tutorial and core concepts ⭐ **START HERE**
+- **[Getting Started Guide](./Docs/GettingStarted.md)** - 5-minute tutorial and core concepts **START HERE**
 
 ### Integration Guides
 - **[Serilog Integration](./Docs/SerilogIntegration.md)** - Automatic masking with IDestructuringPolicy
 - **[ILogger Integration](./Docs/ILoggerIntegration.md)** - Using with Microsoft.Extensions.Logging
 
 ### Specialized Topics
-- **[Compliance Guide](./Docs/ComplianceGuide.md)** - GDPR, HIPAA, and PCI-DSS implementation patterns ⚖️ **COMPLIANCE**
+- **[Compliance Guide](./Docs/ComplianceGuide.md)** - GDPR, HIPAA, and PCI-DSS implementation patterns **COMPLIANCE**
 - **[DateShiftRule Documentation](./Docs/DateAgeMaskRule.md)** - HIPAA-compliant date masking
 - **[NationalIdMaskRule Documentation](./Docs/NationalIdMaskRule.md)** - Country-specific ID masking
 
-### 💡 Sample Projects
+### Sample Projects
 - **[Serilog Destructuring Sample](./ITW.FluentMasker.Serilog.Destructure.Sample/)** - Complete working examples
   - Person masking (PII)
   - Credit card masking (PCI-DSS)
@@ -336,7 +336,7 @@ dotnet run -c Release
 
 FluentMasker is designed to help organizations meet regulatory compliance requirements:
 
-> **📖 For comprehensive compliance implementation patterns, see the [Compliance Guide](src/Docs/ComplianceGuide.md)** which covers:
+> **📖 For comprehensive compliance implementation patterns, see the [Compliance Guide](./Docs/ComplianceGuide.md)** which covers:
 > - **GDPR**: Data minimization, pseudonymization, right to erasure, and safe logging
 > - **HIPAA**: Safe Harbor Method (all 18 identifiers), temporal preservation, PHI masking
 > - **PCI-DSS**: Credit card masking, CVV handling, transaction logging, and CDE protection
