@@ -9,17 +9,28 @@ A high-performance, fluent API library for .NET that provides comprehensive data
 
 ---
 
+## Quick Start
+
+**New to FluentMasker?** Start with our comprehensive **[Getting Started Guide](./Docs/GettingStarted.md)** - Get up and running in 5 minutes!
+
+The guide includes:
+- Installation and setup
+- Your first masker in 5 minutes
+- Core concepts explained
+- Common use cases and patterns
+- Troubleshooting and testing
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
+- [Documentation](#documentation)
 - [Masking Rules](#masking-rules)
 - [Advanced Usage](#advanced-usage)
 - [Performance](#performance)
 - [Compliance & Security](#compliance--security)
-- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -68,98 +79,82 @@ FluentMasker is a powerful data masking library designed to help you protect sen
 
 ---
 
-## Installation
+## Quick Start Examples
 
-### NuGet Package Manager
-
-```bash
-Install-Package ITW.FluentMasker
-```
-
-### .NET CLI
-
-```bash
-dotnet add package ITW.FluentMasker
-```
-
-### Package Reference
-
-```xml
-<PackageReference Include="ITW.FluentMasker" Version="2.1.0" />
-```
-
----
-
-## Quick Start
-
-### Basic Usage: Fluent Builder API
-
-```csharp
-using ITW.FluentMasker.Extensions;
-using ITW.FluentMasker.Builders;
-
-// Create a simple masking configuration
-var person = new Person
-{
-    FirstName = "John",
-    LastName = "Doe",
-    Email = "john.doe@example.com",
-    Phone = "+1-555-123-4567",
-    SSN = "123-45-6789"
-};
-
-// Mask using fluent API
-var maskedPerson = StringMaskingBuilder.For(person)
-    .MaskStart(x => x.FirstName, count: 2)           // "**hn"
-    .MaskEnd(x => x.LastName, count: 2)              // "D**"
-    .EmailMask(x => x.Email, keepDomain: true)       // "j***@example.com"
-    .PhoneMask(x => x.Phone, keepLast: 4)            // "+*-***-***-4567"
-    .Redact(x => x.SSN)                              // "[REDACTED]"
-    .Build();
-
-Console.WriteLine(maskedPerson.MaskedData);
-```
-
-### Advanced Usage: Custom Masker Classes
+### Basic Masking
 
 ```csharp
 using ITW.FluentMasker;
 using ITW.FluentMasker.MaskRules;
 
+// Create a masker class
 public class PersonMasker : AbstractMasker<Person>
 {
     public PersonMasker()
     {
-        // Mask first name: keep first 2 characters
-        MaskFor(x => x.FirstName, new KeepFirstRule(2, "*"));
+        Initialize();
+    }
 
-        // Email: mask local part, keep domain
-        MaskFor(x => x.Email, new EmailMaskRule(keepDomain: true));
+    private void Initialize()
+    {
+        SetPropertyRuleBehavior(PropertyRuleBehavior.Remove);
 
-        // Credit card: PCI-DSS compliant (last 4 digits only)
-        MaskFor(x => x.CreditCard, new CardMaskRule(keepLast: 4));
+        // Mask email - keep domain
+        MaskFor(x => x.Email, (IMaskRule)new EmailMaskRule(
+            localKeep: 2, 
+            domainStrategy: EmailDomainStrategy.KeepFull
+        ));
 
-        // IBAN: ISO 13616 compliant masking
-        MaskFor(x => x.BankAccount, new IBANMaskRule(keepLast: 4));
+        // Mask phone - show last 4 digits
+        MaskFor(x => x.Phone, (IMaskRule)new PhoneMaskRule(
+            keepLast: 4, 
+            preserveSeparators: true
+        ));
 
-        // Nested objects: mask each pet in collection
-        MaskFor(x => x.Pets, new MaskForEachRule<Pet>(new PetMasker()));
+        // Redact SSN completely
+        MaskFor(x => x.SSN, (IMaskRule)new RedactRule("[REDACTED]"));
     }
 }
 
-// Usage
+// Use the masker
+var person = new Person 
+{ 
+    Email = "john.doe@example.com",
+    Phone = "+1 (555) 123-4567",
+    SSN = "123-45-6789"
+};
+
 var masker = new PersonMasker();
 var result = masker.Mask(person);
 
-if (result.IsSuccess)
-{
-    Console.WriteLine(result.MaskedData);
-}
-else
-{
-    Console.WriteLine($"Errors: {string.Join(", ", result.Errors)}");
-}
+Console.WriteLine(result.MaskedData);
+// Output: {"Email":"jo**@example.com","Phone":"+* (***) ***-4567","SSN":"[REDACTED]"}
 ```
+
+**For more examples and detailed explanations, see the [Getting Started Guide](./Docs/GettingStarted.md).**
+
+---
+
+## Documentation
+
+### Essential Guides
+- **[Getting Started Guide](./Docs/GettingStarted.md)** - 5-minute tutorial and core concepts ⭐ **START HERE**
+
+### Integration Guides
+- **[Serilog Integration](./Docs/SerilogIntegration.md)** - Automatic masking with IDestructuringPolicy
+- **[ILogger Integration](./Docs/ILoggerIntegration.md)** - Using with Microsoft.Extensions.Logging
+
+### Specialized Topics
+- **[Compliance Guide](./Docs/ComplianceGuide.md)** - GDPR, HIPAA, and PCI-DSS implementation patterns ⚖️ **COMPLIANCE**
+- **[DateShiftRule Documentation](./Docs/DateAgeMaskRule.md)** - HIPAA-compliant date masking
+- **[NationalIdMaskRule Documentation](./Docs/NationalIdMaskRule.md)** - Country-specific ID masking
+
+### 💡 Sample Projects
+- **[Serilog Destructuring Sample](./ITW.FluentMasker.Serilog.Destructure.Sample/)** - Complete working examples
+  - Person masking (PII)
+  - Credit card masking (PCI-DSS)
+  - Health record masking (HIPAA)
+  - Multiple object types
 
 ---
 
@@ -476,6 +471,13 @@ dotnet run -c Release
 ## Compliance & Security
 
 FluentMasker is designed to help organizations meet regulatory compliance requirements:
+
+> **📖 For comprehensive compliance implementation patterns, see the [Compliance Guide](src/Docs/ComplianceGuide.md)** which covers:
+> - **GDPR**: Data minimization, pseudonymization, right to erasure, and safe logging
+> - **HIPAA**: Safe Harbor Method (all 18 identifiers), temporal preservation, PHI masking
+> - **PCI-DSS**: Credit card masking, CVV handling, transaction logging, and CDE protection
+> 
+> Includes 20+ real-world code examples, compliance checklists, and cross-regulation scenarios.
 
 ### GDPR (General Data Protection Regulation)
 
