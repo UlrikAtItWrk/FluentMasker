@@ -1043,5 +1043,108 @@ namespace ITW.FluentMasker.Extensions
         {
             return builder.AddRule(new URLMaskRule(hideQuery, maskQueryKeys, maskPathSegments, maskValue));
         }
+
+        /// <summary>
+        /// Masks dates for GDPR and HIPAA Safe Harbor compliance.
+        /// Supports multiple modes: year-only, date shifting, and complete redaction.
+        /// </summary>
+        /// <param name="builder">The builder instance</param>
+        /// <param name="mode">The masking strategy: "year-only" (default), "date-shift", or "redact"</param>
+        /// <param name="daysRange">
+        /// For date-shift mode: maximum days to shift in either direction.
+        /// For HIPAA compliance, should be ≤ 365. Default: 180.
+        /// </param>
+        /// <param name="ageBucketing">
+        /// If true, when used with age data, ages are bucketed into ranges.
+        /// Ages ≥90 always become "90+" regardless of this setting. Default: false.
+        /// </param>
+        /// <param name="maskChar">Character to use for masking (default: "*")</param>
+        /// <param name="separator">Separator for date components (default: "-")</param>
+        /// <returns>The builder instance for method chaining</returns>
+        /// <remarks>
+        /// <para><b>Masking Modes:</b></para>
+        /// <list type="bullet">
+        /// <item><description><b>year-only:</b> Keeps year, masks month/day → "1982-**-**" (HIPAA compliant)</description></item>
+        /// <item><description><b>date-shift:</b> Shifts date by consistent offset (requires seed) → "1982-08-15" (HIPAA compliant with seed)</description></item>
+        /// <item><description><b>redact:</b> Completely removes date → "[REDACTED]" (maximum privacy)</description></item>
+        /// </list>
+        /// <para><b>HIPAA Safe Harbor Compliance:</b></para>
+        /// <para>
+        /// Per 45 CFR §164.514(b)(2):
+        /// - Year-only mode complies with requirement to remove all date elements except year
+        /// - Date-shift mode complies when used with seed provider (consistent offset per individual)
+        /// - Ages ≥90 are always masked as "90+"
+        /// </para>
+        /// <para>
+        /// For date-shift mode with HIPAA compliance, use WithRandomSeed() before this method:
+        /// <code>builder.WithRandomSeed(str => patientId.GetHashCode()).DateAgeMask("date-shift", 180)</code>
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var masker = new PatientMasker();
+        ///
+        /// // Year-only masking (default, HIPAA compliant)
+        /// masker.MaskFor(x => x.DateOfBirth, m => m.DateAgeMask());
+        /// // "1982-11-23" becomes "1982-**-**"
+        ///
+        /// // Date shifting with consistent offset per patient (HIPAA compliant)
+        /// masker.MaskFor(x => x.AdmissionDate, m => m
+        ///     .WithRandomSeed(str => patientId.GetHashCode())
+        ///     .DateAgeMask("date-shift", daysRange: 180));
+        /// // "2023-09-18" becomes "2024-02-15" (example - consistent per patient)
+        ///
+        /// // Complete redaction
+        /// masker.MaskFor(x => x.SensitiveDate, m => m.DateAgeMask("redact"));
+        /// // "1982-11-23" becomes "[REDACTED]"
+        ///
+        /// // Year-only with age bucketing enabled
+        /// masker.MaskFor(x => x.DateOfBirth, m => m.DateAgeMask(ageBucketing: true));
+        /// // When calculating ages: 42 becomes "41-50"
+        ///
+        /// // Custom formatting
+        /// masker.MaskFor(x => x.Date, m => m.DateAgeMask(
+        ///     mode: "year-only",
+        ///     maskChar: "X",
+        ///     separator: "/"));
+        /// // "1982-11-23" becomes "1982/XX/XX"
+        ///
+        /// // Handles ISO 8601 timestamps
+        /// masker.MaskFor(x => x.Timestamp, m => m.DateAgeMask());
+        /// // "2023-09-18T14:23:00Z" becomes "2023-**-**"
+        ///
+        /// // Graceful handling of invalid dates
+        /// masker.MaskFor(x => x.BadDate, m => m.DateAgeMask());
+        /// // "INVALID" remains "INVALID"
+        /// </code>
+        /// </example>
+        public static StringMaskingBuilder DateAgeMask(
+            this StringMaskingBuilder builder,
+            string mode = "year-only",
+            int daysRange = 180,
+            bool ageBucketing = false,
+            string maskChar = "*",
+            string separator = "-")
+        {
+            if (builder == null)
+                throw new ArgumentNullException(nameof(builder));
+
+            var maskingMode = mode.ToLowerInvariant() switch
+            {
+                "year-only" => DateAgeMaskRule.MaskingMode.YearOnly,
+                "date-shift" => DateAgeMaskRule.MaskingMode.DateShift,
+                "redact" => DateAgeMaskRule.MaskingMode.Redact,
+                _ => throw new ArgumentException($"Unknown mode: {mode}. Valid values are: year-only, date-shift, redact", nameof(mode))
+            };
+
+            var rule = new DateAgeMaskRule(
+                mode: maskingMode,
+                daysRange: daysRange,
+                ageBucketing: ageBucketing,
+                maskChar: maskChar,
+                separator: separator);
+
+            return builder.AddRule(rule);
+        }
     }
 }

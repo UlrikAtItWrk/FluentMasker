@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITW.FluentMasker.TestConsol
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITW.FluentMasker.UnitTests", "ITW.FluentMasker.UnitTests\ITW.FluentMasker.UnitTests.csproj", "{BFE1D8F8-7A83-4CB2-BCD3-5F8EAF85651F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITW.FluentMasker.Serilog.Destructure.Sample", "ITW.FluentMasker.Serilog.Destructure.Sample\ITW.FluentMasker.Serilog.Destructure.Sample.csproj", "{9E9B47DC-EB5D-48BC-B518-1AB26B19F9DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,9 +31,16 @@ Global
 		{BFE1D8F8-7A83-4CB2-BCD3-5F8EAF85651F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BFE1D8F8-7A83-4CB2-BCD3-5F8EAF85651F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BFE1D8F8-7A83-4CB2-BCD3-5F8EAF85651F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E9B47DC-EB5D-48BC-B518-1AB26B19F9DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E9B47DC-EB5D-48BC-B518-1AB26B19F9DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E9B47DC-EB5D-48BC-B518-1AB26B19F9DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E9B47DC-EB5D-48BC-B518-1AB26B19F9DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9E9B47DC-EB5D-48BC-B518-1AB26B19F9DC} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A67C6597-06C5-4783-84D0-9FE77C2957AA}
