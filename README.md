@@ -90,7 +90,7 @@ dotnet add package ITW.FluentMasker
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Basic Usage: Fluent Builder API
 
@@ -163,7 +163,7 @@ else
 
 ---
 
-## 🛠️ Masking Rules
+## Masking Rules
 
 ### 1. String Masking Rules
 
@@ -339,7 +339,7 @@ masker.MaskFor(x => x.AccountNumber, m => m.TemplateMask(
 
 ---
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### Deterministic Masking with Seed Providers
 
@@ -441,7 +441,7 @@ else
 
 ---
 
-## ⚡ Performance
+## Performance
 
 FluentMasker is built for high-throughput scenarios with enterprise-grade performance:
 
@@ -473,16 +473,16 @@ dotnet run -c Release
 
 ---
 
-## 🔒 Compliance & Security
+## Compliance & Security
 
 FluentMasker is designed to help organizations meet regulatory compliance requirements:
 
 ### GDPR (General Data Protection Regulation)
 
-✅ **Pseudonymization**: Hash rule provides GDPR Article 32 compliant pseudonymization
-✅ **Right to be Forgotten**: NullOut and Redact rules for data deletion
-✅ **Data Minimization**: Selective masking reduces PII exposure
-✅ **Privacy by Design**: Default behaviors protect sensitive data
+* **Pseudonymization**: Hash rule provides GDPR Article 32 compliant pseudonymization
+* **Right to be Forgotten**: NullOut and Redact rules for data deletion
+* **Data Minimization**: Selective masking reduces PII exposure
+* **Privacy by Design**: Default behaviors protect sensitive data
 
 **Example:**
 
@@ -510,9 +510,9 @@ public class GDPRUserMasker : AbstractMasker<User>
 
 ### HIPAA (Health Insurance Portability and Accountability Act)
 
-✅ **Safe Harbor Method**: DateShiftRule implements 45 CFR §164.514(b)(2)
-✅ **De-identification**: 18 HIPAA identifiers can be masked
-✅ **Consistent Shifting**: Deterministic date shifting per patient
+* **Safe Harbor Method**: DateShiftRule implements 45 CFR §164.514(b)(2)
+* **De-identification**: 18 HIPAA identifiers can be masked
+* **Consistent Shifting**: Deterministic date shifting per patient
 
 **Example:**
 
@@ -547,9 +547,9 @@ public class HIPAAPatientMasker : AbstractMasker<Patient>
 
 ### PCI-DSS (Payment Card Industry Data Security Standard)
 
-✅ **Requirement 3.3**: CardMask shows last 4 digits only
-✅ **Requirement 3.4**: Renders PAN unreadable via masking
-✅ **Luhn Validation**: Ensures card numbers are valid before masking
+* **Requirement 3.3**: CardMask shows last 4 digits only
+* **Requirement 3.4**: Renders PAN unreadable via masking
+* **Luhn Validation**: Ensures card numbers are valid before masking
 
 **Example:**
 
@@ -566,8 +566,8 @@ masker.MaskFor(x => x.CardNumber, m => m.CardMask(
 
 ### CCPA (California Consumer Privacy Act)
 
-✅ **Consumer Rights**: Support for data deletion and anonymization
-✅ **De-identification**: Statistical masking for analytics while protecting privacy
+* **Consumer Rights**: Support for data deletion and anonymization
+* **De-identification**: Statistical masking for analytics while protecting privacy
 
 ### Security Best Practices
 
@@ -579,7 +579,7 @@ masker.MaskFor(x => x.CardNumber, m => m.CardMask(
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 ### Usage Examples
 
@@ -664,7 +664,7 @@ public class TestDataMasker : AbstractMasker<Customer>
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these guidelines:
 
