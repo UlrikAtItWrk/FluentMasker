@@ -9,7 +9,7 @@ A high-performance, fluent API library for .NET that provides comprehensive data
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -25,7 +25,7 @@ A high-performance, fluent API library for .NET that provides comprehensive data
 
 ---
 
-## 🎯 Overview
+## Overview
 
 FluentMasker is a powerful data masking library designed to help you protect sensitive information while maintaining data utility for testing, analytics, and compliance purposes. It supports over 30 masking strategies across multiple categories:
 
@@ -37,16 +37,16 @@ FluentMasker is a powerful data masking library designed to help you protect sen
 
 ### Why FluentMasker?
 
-✅ **Type-Safe**: Generic interfaces ensure compile-time type safety
-✅ **High Performance**: 40,000+ operations/second with zero-allocation optimizations
-✅ **Fluent API**: Intuitive, chainable method syntax
-✅ **Compliance-Ready**: GDPR, HIPAA, CCPA, and PCI-DSS compliant transformations
-✅ **Extensible**: Easy to add custom masking rules
-✅ **Well-Tested**: Comprehensive unit test coverage
+* **Type-Safe**: Generic interfaces ensure compile-time type safety
+* **High Performance**: 40,000+ operations/second with zero-allocation optimizations
+* **Fluent API**: Intuitive, chainable method syntax
+* **Compliance-Ready**: GDPR, HIPAA, CCPA, and PCI-DSS compliant transformations
+* **Extensible**: Easy to add custom masking rules
+* **Well-Tested**: Comprehensive unit test coverage
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Capabilities
 
@@ -68,7 +68,7 @@ FluentMasker is a powerful data masking library designed to help you protect sen
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### NuGet Package Manager
 
@@ -672,7 +672,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/FluentMasker.git
+git clone https://github.com/UlrikAtItWrk/FluentMasker.git
 cd FluentMasker
 
 # Build the solution
@@ -711,11 +711,11 @@ public class CustomMaskRule : IStringMaskRule
 
 ### Code Quality Standards
 
-- ✅ **Unit Tests**: Minimum 90% code coverage
-- ✅ **Performance**: Meet or exceed benchmark targets
-- ✅ **Documentation**: Comprehensive XML docs with examples
-- ✅ **Naming**: Follow C# naming conventions
-- ✅ **SOLID Principles**: Maintain clean architecture
+- **Unit Tests**: Minimum 90% code coverage
+- **Performance**: Meet or exceed benchmark targets
+- **Documentation**: Comprehensive XML docs with examples
+- **Naming**: Follow C# naming conventions
+- **SOLID Principles**: Maintain clean architecture
 
 ### Pull Request Process
 
@@ -730,10 +730,3 @@ public class CustomMaskRule : IStringMaskRule
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
-## Acknowledgments
-
-- Inspired by data privacy requirements from GDPR, HIPAA, and PCI-DSS
-
-
