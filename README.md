@@ -4,8 +4,8 @@ A high-performance, fluent API library for .NET that provides comprehensive data
 
 [![.NET Version](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/yourusername/FluentMasker)
-[![NuGet](https://img.shields.io/badge/nuget-v2.1.0-blue)](https://www.nuget.org/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/UlrikAtItWrk/FluentMasker)
+[![NuGet](https://img.shields.io/badge/nuget-v2.0.4-blue)](https://www.nuget.org/packages/ITW.FluentMasker)
 
 ---
 
