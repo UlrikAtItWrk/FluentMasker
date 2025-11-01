@@ -104,7 +104,23 @@ FluentMasker is a powerful data masking library designed to help you protect sen
 
 ## Masking Rules
 
-See the [FluentMasker - Complete Mask Rules Reference](./Docs/MaskRulesReference.md) for a detailed description of the Masking rules.
+FluentMasker includes **30+ built-in masking rules** organized into 7 categories: position-based masking, format-specific rules (email, phone, cards), cryptographic operations, date/time transformations, pattern-based rules, character filtering, and collection handling. Each rule is optimized for performance and includes comprehensive examples.
+
+**Rule Categories:**
+- **Position-Based** (10 rules): MaskStart, MaskEnd, MaskMiddle, MaskRange, KeepFirst, KeepLast, etc.
+- **Format-Specific** (6 rules): EmailMask, PhoneMask, CardMask, IBANMask, NationalIdMask, URLMask
+- **Cryptographic** (4 rules): HashRule (SHA256/SHA512), NoiseAdditive, RoundTo, Bucketize
+- **Date & Time** (4 rules): DateAgeMask, DateShift, TimeBucket, TimeBucketOffset
+- **Pattern-Based** (3 rules): RegexMaskGroup, RegexReplace, TemplateMask
+- **Character Class** (3 rules): MaskCharClass, BlacklistChars, WhitelistChars
+- **Collection** (1 rule): MaskForEach
+
+📖 **See the [Complete Mask Rules Reference](./Docs/MaskRulesReference.md)** for detailed documentation including:
+- Full parameter descriptions and examples for each rule
+- Compliance applicability (GDPR/HIPAA/PCI-DSS)
+- Performance characteristics and benchmarks
+- Code examples and real-world use cases
+- Quick reference comparison table
 
 ---
 
@@ -112,7 +128,22 @@ See the [FluentMasker - Complete Mask Rules Reference](./Docs/MaskRulesReference
 
 ### Deterministic Masking with Seed Providers
 
-Ensure consistent masking across multiple runs using seed providers:
+By default, rules like `NoiseAdditive` and `DateShift` use random values, producing **different outputs each time**. For many use cases—analytics, testing, or HIPAA compliance—you need **consistent, reproducible masking** where the same input always produces the same masked output. Seed providers solve this by deriving random seeds from record identifiers.
+
+**Why Deterministic Masking?**
+- **Analytics**: Aggregate masked data across multiple exports without duplicates
+- **HIPAA Compliance**: Shift all dates for a patient by the same offset (preserves temporal relationships)
+- **Testing**: Reproducible test data that remains consistent across test runs
+- **Searchability**: Hash the same email twice to find matching records in masked datasets
+- **Data Joins**: Join masked tables by pseudonymized keys
+
+**How It Works:**
+- Provide a seed function that extracts a unique identifier (e.g., `TransactionId`, `PatientId`)
+- FluentMasker uses the identifier's hash code to seed the random number generator
+- Same identifier → same seed → same "random" output (deterministic randomness)
+- Different identifiers still get different masked values
+
+**Example - Consistent Transaction Masking:**
 
 ```csharp
 var result = NumericMaskingBuilder.For(transaction)
@@ -126,7 +157,25 @@ var result = NumericMaskingBuilder.For(transaction)
 
 ### Chaining Multiple Rules
 
-Apply multiple transformations in sequence:
+FluentMasker's true power emerges when you **compose multiple masking rules into a pipeline**. Each rule receives the output of the previous rule, allowing you to build sophisticated anonymization strategies from simple, focused operations. Order matters—rules execute left-to-right in the chain.
+
+**Why Chain Rules?**
+- **Layered Privacy**: Combine noise addition + rounding for statistical privacy
+- **Format Then Mask**: Normalize data before applying masking rules
+- **Privacy + Utility**: Balance data protection with analytical usefulness
+- **Complex Transformations**: Break down complex requirements into simple, testable steps
+- **Compliance**: Meet multiple regulatory requirements simultaneously (e.g., HIPAA + statistical anonymization)
+
+**Common Patterns:**
+- **Noise → Round**: Add randomness, then reduce precision for k-anonymity
+- **Mask → Truncate**: Partially hide data, then limit length for display
+- **Hash → Prefix**: Pseudonymize, then extract prefix for bucketing
+- **Shift → Bucket**: Move dates, then group into time ranges
+
+**Design Principle:**
+Each rule does **one thing well**. Chaining lets you combine them declaratively without writing complex custom logic.
+
+**Example - Multi-Step Transformations:**
 
 ```csharp
 masker.MaskFor(x => x.Salary, m => m
@@ -142,7 +191,27 @@ masker.MaskFor(x => x.Name, m => m
 
 ### Nested Object Masking
 
-Mask complex hierarchical data structures:
+Real-world data models are rarely flat—they contain **collections, nested objects, and complex hierarchies**. FluentMasker handles this elegantly with `MaskForEachRule<T>`, which applies type-specific maskers to child objects while maintaining full type safety and composability.
+
+**How It Works:**
+- Create individual maskers for each type in your object graph
+- Use `MaskForEachRule<T>` to apply maskers to nested properties
+- Works with collections (`List<T>`, `IEnumerable<T>`, arrays) and single nested objects
+- Maskers are composable—build complex masking strategies from simple, reusable components
+
+**Benefits:**
+- **Type-Safe**: Compile-time verification of property access and masking rules
+- **Reusable**: Define `EmployeeMasker` once, use it across multiple parent objects
+- **Maintainable**: Changes to child masking logic automatically propagate
+- **Testable**: Unit test each masker independently
+
+**Common Scenarios:**
+- **Order → OrderItems → Product**: E-commerce transaction masking
+- **Company → Employees → Address**: Organizational data hierarchies
+- **Patient → Visits → Medications**: Healthcare record de-identification
+- **API DTOs**: Complex nested response objects for logging
+
+**Example - Complex Hierarchical Masking:**
 
 ```csharp
 public class CompanyMasker : AbstractMasker<Company>
@@ -166,7 +235,20 @@ public class CompanyMasker : AbstractMasker<Company>
 
 ### Property Rule Behavior
 
-Control how unmapped properties are handled:
+FluentMasker provides fine-grained control over **properties without explicit masking rules** through the `PropertyRuleBehavior` setting. This is critical for security and compliance, allowing you to implement **data minimization** (GDPR Article 5) and prevent accidental exposure of sensitive fields.
+
+**Available Behaviors:**
+- **`Remove`** (Recommended): Excludes unmapped properties from output entirely - best for zero-trust security
+- **`Exclude`**: Sets unmapped properties to `null` - useful when schema must be preserved
+- **`Include`**: Passes unmapped properties through unchanged - ⚠️ use with caution, only for non-sensitive data
+
+**Use Cases:**
+- **Compliance**: Ensure only explicitly approved fields are logged (SOC 2, ISO 27001)
+- **Security**: Prevent data leaks from newly added properties that haven't been reviewed
+- **Testing**: Quickly redact all PII while keeping operational data
+- **API Responses**: Control exactly which fields external systems receive
+
+**Example - Selective Property Masking:**
 
 ```csharp
 public class SelectiveMasker : AbstractMasker<Person>
@@ -186,7 +268,15 @@ public class SelectiveMasker : AbstractMasker<Person>
 
 ### Error Handling
 
-Handle masking errors gracefully:
+FluentMasker uses a **non-failing by default** strategy to ensure data processing continues even when individual property masking fails. All masking operations return a `MaskingResult` object that includes success status and detailed error information, allowing you to handle failures gracefully without losing the entire dataset.
+
+**Key Benefits:**
+- Partial masking succeeds even if some properties fail
+- Detailed error messages for debugging
+- Production-safe: one bad field doesn't break the entire pipeline
+- Audit trail: all failures are logged in the result
+
+**Example - Graceful Error Handling:**
 
 ```csharp
 var masker = new PersonMasker();
