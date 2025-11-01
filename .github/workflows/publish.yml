@@ -45,12 +45,6 @@ jobs:
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       # Take the version from the tag name: "v1.2.3" -> "1.2.3"
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0    # REQUIRED so versioning tools & tags work
-
-      # Convert tag v2.0.2 -> 2.0.2
       - name: Compute package version
         id: ver
         shell: bash
@@ -58,16 +52,13 @@ jobs:
           REF="${GITHUB_REF_NAME}"
           echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
 
-      # Pack with an explicit version (covers both PackageVersion and Version)
       - name: Pack
         run: |
           dotnet pack ITW.FluentMasker/ITW.FluentMasker.csproj \
             --configuration Release \
             --no-build \
             -o ./artifacts \
-            /p:PackageId=ITW.FluentMasker \
-            /p:PackageVersion=${{ steps.ver.outputs.version }} \
-            /p:Version=${{ steps.ver.outputs.version }}
+            /p:PackageVersion=${{ steps.ver.outputs.version }}
 
       # Push the package to NuGet.org using a stored API key
       - name: Push package to NuGet.org

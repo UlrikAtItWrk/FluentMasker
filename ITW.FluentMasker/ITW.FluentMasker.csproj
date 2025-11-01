@@ -9,6 +9,13 @@
     <!-- NuGet Package Properties -->
     <PackageId>ITW.FluentMasker</PackageId>
     
+    <!-- MinVer Configuration for Automatic Versioning -->
+    <!-- MinVer calculates version from Git tags and commit height -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerMinimumMajorMinor>2.0</MinVerMinimumMajorMinor>
+    <MinVerDefaultPreReleaseIdentifiers>preview</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerVerbosity>normal</MinVerVerbosity>
+    
     <Authors>Ulrik Baerholm</Authors>
     <Company>It-wrk</Company>
     <Product>FluentMasker</Product>
