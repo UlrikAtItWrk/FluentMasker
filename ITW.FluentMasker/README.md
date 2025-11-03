@@ -4,12 +4,12 @@ A powerful and flexible .NET library for masking sensitive data with a fluent AP
 
 ## Features
 
-? **Fluent API** - Chain multiple masking rules in a readable, declarative style  
-?? **Security-First** - Built-in ReDoS (Regular Expression Denial of Service) protection  
-?? **Type-Safe** - Generic masking rules with automatic type conversion  
-? **High Performance** - Compiled expression trees for 10x+ faster property access  
-?? **Extensible** - Easy to create custom masking rules  
-?? **Rich Rule Set** - 25+ built-in masking rules for common scenarios  
+* **Fluent API** - Chain multiple masking rules in a readable, declarative style  
+  * **Security-First** - Built-in ReDoS (Regular Expression Denial of Service) protection  
+  * **Type-Safe** - Generic masking rules with automatic type conversion  
+* **High Performance** - Compiled expression trees for 10x+ faster property access  
+* **Extensible** - Easy to create custom masking rules  
+* **Rich Rule Set** - 25+ built-in masking rules for common scenarios  
 
 ## Installation
 
